@@ -45,7 +45,7 @@ use rfd::FileDialog;
 
 use output::Output;
 pub use settings::{Localization, Settings};
-use std::{borrow::Cow, hash::Hash};
+use std::{borrow::Cow, hash::Hash, sync::Arc};
 
 const CHILD_APP_ENV_VAR: &str = "KLASK_CHILD_APP";
 
@@ -100,7 +100,7 @@ pub fn run_app(app: Command, settings: Settings, f: impl FnOnce(&ArgMatches)) {
             native_options,
             Box::new(|cc| {
                 klask.setup(cc);
-                Box::new(klask)
+                Ok(Box::new(klask))
             }),
         )
         .unwrap();
@@ -283,11 +283,11 @@ impl Klask<'_> {
 
             fonts.font_data.insert(
                 font_name.clone(),
-                FontData {
+                Arc::new(FontData {
                     font: custom_font,
                     index: 0,
                     tweak: Default::default(),
-                },
+                }),
             );
 
             fonts
