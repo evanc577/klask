@@ -129,7 +129,7 @@ impl Widget for &mut Output {
                                 // Get rid of the ending newline
                                 ui.add(
                                     ProgressBar::new(*value)
-                                        .text(&mess[..mess.len() - 1])
+                                        .text(RichText::new(&mess[..mess.len() - 1]).monospace())
                                         .animate(true),
                                 );
                             }
@@ -244,6 +244,7 @@ fn format_output(ui: &mut Ui, text: &str) {
                             Some(Intensity::Normal) | None => text,
                         };
 
+                        text = text.monospace();
                         ui.add(Label::new(text))
                     }
                 };

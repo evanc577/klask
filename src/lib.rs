@@ -255,7 +255,13 @@ impl eframe::App for Klask<'_> {
                         }
                     }
 
-                    if ui.add_enabled(self.is_child_running(), Button::new(&self.localization.kill)).clicked() {
+                    if ui
+                        .add_enabled(
+                            self.is_child_running(),
+                            Button::new(&self.localization.kill),
+                        )
+                        .clicked()
+                    {
                         self.kill_child();
                     }
 
@@ -281,18 +287,23 @@ impl eframe::App for Klask<'_> {
                             for _ in 0..((2.0 * ui.input(|i| i.time)) as i32 % 4) {
                                 running_text.push('.');
                             }
-                            ui.colored_label(Color32::YELLOW, running_text);
+                            ui.label(running_text);
                         } else {
-                            ui.colored_label(Color32::GREEN, &self.localization.finished);
+                            ui.label(&self.localization.finished);
                         }
                     }
                 });
 
-                egui::ScrollArea::vertical()
-                    .auto_shrink(false)
-                    .stick_to_bottom(true)
+                egui::Frame::default()
+                    .inner_margin(4)
+                    .fill(ctx.style().visuals.faint_bg_color)
                     .show(ui, |ui| {
-                        ui.add(&mut self.output);
+                        egui::ScrollArea::vertical()
+                            .auto_shrink(false)
+                            .stick_to_bottom(true)
+                            .show(ui, |ui| {
+                                ui.add(&mut self.output);
+                            });
                     });
             });
         });
