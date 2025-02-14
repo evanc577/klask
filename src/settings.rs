@@ -98,6 +98,8 @@ pub struct Localization {
     /// Text that shows when the binary is running. There will be animated dots ("...") displayed after it.
     /// Default is "Running".
     pub running: String,
+    /// Text that shows when the binary is finished. Default is "Finished".
+    pub finished: String,
 }
 
 impl Default for Localization {
@@ -120,6 +122,7 @@ impl Default for Localization {
             run: "Run".into(),
             kill: "Kill".into(),
             running: "Running".into(),
+            finished: "Finished".into(),
         }
     }
 }

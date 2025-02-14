@@ -33,19 +33,21 @@ mod error;
 pub mod output;
 mod settings;
 
+use std::borrow::Cow;
+use std::hash::Hash;
+use std::sync::Arc;
+
 use app_state::AppState;
 use child_app::{ChildApp, StdinType};
 use clap::{ArgMatches, Command, CommandFactory, FromArgMatches};
-use eframe::{
-    egui::{self, Button, Color32, Context, FontData, FontDefinitions, Grid, Style, TextEdit, Ui},
-    CreationContext, Frame,
+use eframe::egui::{
+    self, Button, Color32, Context, FontData, FontDefinitions, Grid, Style, TextEdit, Ui,
 };
+use eframe::{CreationContext, Frame};
 use error::ExecutionError;
+use output::{Output, OutputType};
 use rfd::FileDialog;
-
-use output::Output;
 pub use settings::{Localization, Settings};
-use std::{borrow::Cow, hash::Hash, sync::Arc};
 
 const CHILD_APP_ENV_VAR: &str = "KLASK_CHILD_APP";
 
@@ -54,7 +56,6 @@ const CHILD_APP_ENV_VAR: &str = "KLASK_CHILD_APP";
 /// # use clap::{Command, arg};
 /// # use klask::Settings;
 /// let app = Command::new("Example").arg(arg!(--debug <VALUE>).short('d'));
-
 /// klask::run_app(app, Settings::default(), |matches| {
 ///    println!("{:?}", matches.try_contains_id("debug"))
 /// });
@@ -254,20 +255,45 @@ impl eframe::App for Klask<'_> {
                         }
                     }
 
-                    if self.is_child_running() && ui.button(&self.localization.kill).clicked() {
+                    if ui.add_enabled(self.is_child_running(), Button::new(&self.localization.kill)).clicked() {
                         self.kill_child();
                     }
 
-                    if self.is_child_running() {
-                        let mut running_text = String::from(&self.localization.running);
-                        for _ in 0..((2.0 * ui.input(|i| i.time)) as i32 % 4) {
-                            running_text.push('.');
+                    if let Output::Child(_, output) = &self.output {
+                        if ui.button("Copy output").clicked() {
+                            ui.ctx().copy_text(
+                                output
+                                    .iter()
+                                    .map(|(_, o)| match o {
+                                        OutputType::Text(text) => text,
+                                        OutputType::ProgressBar(text, _) => text,
+                                    })
+                                    .flat_map(|text| cansi::v3::categorise_text(text))
+                                    .map(|slice| slice.text)
+                                    .collect::<String>(),
+                            )
                         }
-                        ui.label(running_text);
+                    }
+
+                    if let Output::Child(ref child, _) = &self.output {
+                        if child.is_running() {
+                            let mut running_text = String::from(&self.localization.running);
+                            for _ in 0..((2.0 * ui.input(|i| i.time)) as i32 % 4) {
+                                running_text.push('.');
+                            }
+                            ui.colored_label(Color32::YELLOW, running_text);
+                        } else {
+                            ui.colored_label(Color32::GREEN, &self.localization.finished);
+                        }
                     }
                 });
 
-                ui.add(&mut self.output);
+                egui::ScrollArea::vertical()
+                    .auto_shrink(false)
+                    .stick_to_bottom(true)
+                    .show(ui, |ui| {
+                        ui.add(&mut self.output);
+                    });
             });
         });
     }

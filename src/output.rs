@@ -1,11 +1,14 @@
-use crate::child_app::ChildApp;
-use crate::error::ExecutionError;
-use cansi::{v3::CategorisedSlice, Color, Intensity};
-use eframe::egui::{vec2, Color32, Label, ProgressBar, RichText, Ui, Widget};
-use linkify::{LinkFinder, LinkKind};
 use std::collections::hash_map::DefaultHasher;
 use std::hash::{Hash, Hasher};
 use std::io::Write;
+
+use cansi::v3::CategorisedSlice;
+use cansi::{Color, Intensity};
+use eframe::egui::{vec2, Color32, Label, ProgressBar, RichText, Ui, Widget};
+use linkify::{LinkFinder, LinkKind};
+
+use crate::child_app::ChildApp;
+use crate::error::ExecutionError;
 
 /// Displays a progress bar in the output. First call creates
 /// a progress bar and future calls update it.
@@ -106,24 +109,23 @@ impl Widget for &mut Output {
 
                 // View
                 ui.vertical(|ui| {
-                    if ui.button("Copy output").clicked() {
-                        ui.ctx().output_mut(|o| {
-                            o.copied_text = output
-                                .iter()
-                                .map(|(_, o)| match o {
-                                    OutputType::Text(text) => text,
-                                    OutputType::ProgressBar(text, _) => text,
-                                })
-                                .flat_map(|text| cansi::v3::categorise_text(text))
-                                .map(|slice| slice.text)
-                                .collect::<String>();
-                        })
-                    }
+                    // Padding between widgets causes extra spaces to appear between lines of text
+                    // sometimes, write blocks of text all at once
+                    let mut texts = Vec::new();
+                    let show_text = |ui: &mut Ui, texts: &mut Vec<&String>| {
+                        // Write out any text
+                        if !texts.is_empty() {
+                            let text: String = texts.iter().map(|t: &&String| t.as_str()).collect();
+                            format_output(ui, &text);
+                            texts.clear();
+                        }
+                    };
 
                     for (_, o) in output {
                         match o {
-                            OutputType::Text(ref text) => format_output(ui, text),
+                            OutputType::Text(ref text) => texts.push(text),
                             OutputType::ProgressBar(ref mess, value) => {
+                                show_text(ui, &mut texts);
                                 // Get rid of the ending newline
                                 ui.add(
                                     ProgressBar::new(*value)
@@ -133,6 +135,7 @@ impl Widget for &mut Output {
                             }
                         }
                     }
+                    show_text(ui, &mut texts);
                 })
                 .response
             }

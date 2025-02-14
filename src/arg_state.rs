@@ -1,8 +1,11 @@
-use crate::{settings::Localization, to_sentence_case, Klask};
 use clap::{Arg, ValueHint};
-use eframe::egui::{widgets::Widget, ComboBox, Response, TextEdit, Ui};
+use eframe::egui::widgets::Widget;
+use eframe::egui::{ComboBox, Response, TextEdit, Ui};
 use rfd::FileDialog;
 use uuid::Uuid;
+
+use crate::settings::Localization;
+use crate::{to_sentence_case, Klask};
 
 #[derive(Debug, Clone)]
 pub struct ArgState<'s> {
@@ -52,7 +55,7 @@ impl<'s> ArgState<'s> {
         let kind = match *arg.get_action() {
             clap::ArgAction::Set => ArgKind::String {
                 value: (String::new(), Uuid::new_v4()),
-                default: default.get(0).map(|v| v.to_string()),
+                default: default.first().map(|v| v.to_string()),
                 possible,
                 value_hint: arg.get_value_hint(),
             },
@@ -139,7 +142,7 @@ impl<'s> ArgState<'s> {
                 Some(())
             })
         } else {
-            ComboBox::from_id_source(id)
+            ComboBox::from_id_salt(id)
                 .selected_text(&*value)
                 .show_ui(ui, |ui| {
                     if optional {
@@ -322,7 +325,7 @@ impl Widget for &mut ArgState<'_> {
             ArgKind::Occurences(i) => {
                 ui.horizontal(|ui| {
                     if ui.small_button("-").clicked() {
-                        *i = (*i - 1).max(0);
+                        *i -= 1;
                     }
 
                     ui.label(i.to_string());
