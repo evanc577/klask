@@ -142,6 +142,11 @@ impl<'s> ArgState<'s> {
                 Some(())
             })
         } else {
+            if let Some(default) = default {
+                if !optional && value.is_empty() {
+                    *value = default.clone();
+                }
+            }
             ComboBox::from_id_salt(id)
                 .selected_text(&*value)
                 .show_ui(ui, |ui| {
