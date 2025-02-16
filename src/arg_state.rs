@@ -143,14 +143,15 @@ impl<'s> ArgState<'s> {
             })
         } else {
             if let Some(default) = default {
-                if !optional && value.is_empty() {
+                if value.is_empty() {
                     *value = default.clone();
                 }
             }
             ComboBox::from_id_salt(id)
                 .selected_text(&*value)
                 .show_ui(ui, |ui| {
-                    if optional {
+                    // Only set None option if there is no default value set
+                    if optional && default.is_none() {
                         ui.selectable_value(value, String::new(), "None");
                     }
                     for p in possible {
